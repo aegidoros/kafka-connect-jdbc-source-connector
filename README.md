@@ -42,3 +42,30 @@ The compose file contains all the necessary services that need to be started:
 	- CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/jars
 
 	We will define a volume to load our jdbc driver. We can download the driver from https://www.confluent.io/hub/confluentinc/kafka-connect-jdbc, this will take you to a website where you can click on the download and you will get a zip file,  just have to unzip the file in the path of your local plugin folder.
+	
+## 5. Creating JDBC source connector for Postgres database
+
+Once we have start-up the all infrastructure by means of exectuing the command: **`docker-compose up`** we can create the JDBC source connector by sending an HTTP request to the local kafka connect service. See the example of a curl request:
+
+> curl -s -X POST \   -H "Content-Type: application/json" \   --data
+> '{"name": "jdbc_source_connector_postgresql_01",    "config": { 
+> "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+> "connection.url": "jdbc:postgresql://postgresql:5432/influencers",
+> "connection.user": "user", 
+> "connection.password": 1234,
+> "topic.prefix": "influencers-01-",
+>  "validate.non.null": false,
+> "poll.interval.ms" : 10000, 
+> "mode":"incrementing",
+> "transforms":"createKey,extractInt",
+> "transforms.createKey.type":"org.apache.kafka.connect.transforms.ValueToKey",
+> "transforms.createKey.fields":"id",
+> "transforms.extractInt.type":"org.apache.kafka.connect.transforms.ExtractField$Key",
+> "transforms.extractInt.field":"id",
+>  "table.whitelist":"user",
+> "dialect.name":"PostgreSqlDatabaseDialect"}}'
+> http://localhost:8083/connectors
+
+With the command above kafka connect will retrieve all the new messages in the **user** table and will publish the new entries in the topic named influencers-01-user.  Note that in this example we are only tracking the new entries in the database, if we wanted to include the updates we would have to specify an new attribute in the user table with the timestamp, and change the mode of the connector to timestamp+incremmeting
+
+	
